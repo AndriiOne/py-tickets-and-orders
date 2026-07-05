@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import QuerySet
@@ -12,10 +13,13 @@ def create_order(
         date: str = None
 ) -> Order:
     user = get_user_model().objects.get(username=username)
-    order = Order.objects.create(user=user)
 
     if date:
-        Order.objects.filter(pk=order.pk).update(created_at=date)
+        with patch("django.utils.timezone.now", return_value=date):
+            order = Order.objects.create(user=user)
+    else:
+        order = Order.objects.create(user=user)
+
     for ticket in tickets:
         Ticket.objects.create(
             row=ticket["row"],
